@@ -192,3 +192,32 @@ Run the migration:
 ```
 bin/rails db:migrate
 ```
+
+## Step 7: Create the OmniAuth callbacks controller
+
+When a user successfully authenticates with Google, Google redirects them back to our app. We need a controller to handle this callback:
+
+Create `app/controllers/omniauth_callbacks_controller.rb`:
+
+```ruby
+# app/controllers/omniauth_callbacks_controller.rb
+
+class OmniauthCallbacksController < Devise::OmniauthCallbacksController
+  def google_oauth2
+    @user = User.from_omniauth(request.env["omniauth.auth"])
+
+    if @user.persisted?
+      sign_in_and_redirect @user
+      set_flash_message(:notice, :success, kind: "Google") if is_navigational_format?
+    else
+      session["devise.google_data"] = request.env["omniauth.auth"].except(:extra)
+      redirect_to root_url, alert: "Something went wrong."
+    end
+  end
+end
+```
+
+This controller:
+1. Receives the OAuth data from Google via `request.env["omniauth.auth"]`
+2. Calls `User.from_omniauth` to find or create the user (we'll write this next)
+3. Signs them in and redirects to the home page
