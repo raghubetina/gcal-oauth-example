@@ -221,3 +221,36 @@ This controller:
 1. Receives the OAuth data from Google via `request.env["omniauth.auth"]`
 2. Calls `User.from_omniauth` to find or create the user (we'll write this next)
 3. Signs them in and redirects to the home page
+
+## Step 8: Update the User model
+
+Now we need to add the `:omniauthable` module to Devise and create the `from_omniauth` method:
+
+```ruby
+# app/models/user.rb
+
+class User < ApplicationRecord
+  # Include default devise modules. Others available are:
+  # :confirmable, :lockable, :timeoutable, :trackable and :omniauthable
+  devise :database_authenticatable, :registerable,
+         :recoverable, :rememberable, :validatable,
+         :omniauthable, omniauth_providers: [:google_oauth2]
+
+  def self.from_omniauth(auth)
+    find_or_create_by(provider: auth.provider, uid: auth.uid) do |user|
+      user.email = auth.info.email
+      user.password = Devise.friendly_token[0, 20]
+      user.google_access_token = auth.credentials.token
+    end
+  end
+end
+```
+
+Key changes:
+- Added `:omniauthable` to the Devise modules
+- Added `omniauth_providers: [:google_oauth2]` to specify which providers we support
+- The `from_omniauth` class method:
+  - Looks for an existing user with matching `provider` and `uid`
+  - If not found, creates a new user with the Google email
+  - Generates a random password (they'll never use it since they sign in with Google)
+  - Saves the `google_access_token` so we can access their calendar
