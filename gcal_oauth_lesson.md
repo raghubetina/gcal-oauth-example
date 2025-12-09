@@ -115,7 +115,10 @@ Before creating credentials, you need to configure what users see when they auth
    - `.../auth/userinfo.profile`
    - `.../auth/calendar.readonly`
 6. Click "Save and Continue"
-7. On the "Test users" page, add your own Google email address (required while the app is in testing mode)
+7. On the "Test users" page, click "Add Users" and add your own Google email address
+
+**Important**: While your app is in "Testing" mode, only users you add here can sign in. If you skip this step, you'll see "Access blocked: [App name] has not completed the Google verification process" when trying to sign in.
+
 8. Click "Save and Continue", then "Back to Dashboard"
 
 ### Create OAuth credentials
