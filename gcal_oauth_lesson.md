@@ -272,3 +272,37 @@ bundle install
 ```
 
 This gem provides a Ruby interface to the Google Calendar API.
+
+## Step 10: Create the PagesController
+
+Now let's create a controller that fetches and displays calendar events:
+
+```ruby
+# app/controllers/pages_controller.rb
+
+class PagesController < ApplicationController
+  before_action :authenticate_user!
+
+  def home
+    service = Google::Apis::CalendarV3::CalendarService.new
+    service.authorization = current_user.google_access_token
+
+    response = service.list_events(
+      "primary",
+      max_results: 10,
+      single_events: true,
+      order_by: "startTime",
+      time_min: Time.now.iso8601
+    )
+
+    @events = response.items || []
+  end
+end
+```
+
+This controller:
+- Requires the user to be signed in (`before_action :authenticate_user!`)
+- Creates a Google Calendar API service
+- Uses the user's stored access token for authorization
+- Fetches up to 10 upcoming events from their primary calendar
+- `"primary"` refers to the user's main calendar
