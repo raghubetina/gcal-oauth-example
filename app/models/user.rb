@@ -6,6 +6,7 @@
 #  email                  :string           default(""), not null
 #  encrypted_password     :string           default(""), not null
 #  google_access_token    :string
+#  google_refresh_token   :string
 #  provider               :string
 #  remember_created_at    :datetime
 #  reset_password_sent_at :datetime
