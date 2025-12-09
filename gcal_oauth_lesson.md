@@ -58,3 +58,23 @@ bin/rails db:migrate
 Now you have a working authentication system! Users can sign up and sign in at `/users/sign_up` and `/users/sign_in`.
 
 But we want users to sign in with Google instead of a password. Let's set that up next.
+
+## Step 3: Add OmniAuth gems
+
+[OmniAuth](https://github.com/omniauth/omniauth) is a library that standardizes authentication across many providers (Google, GitHub, Facebook, etc.). We need two gems:
+
+```ruby
+# Gemfile
+
+gem "omniauth-google-oauth2"
+gem "omniauth-rails_csrf_protection"
+```
+
+- `omniauth-google-oauth2` - handles the Google-specific OAuth flow
+- `omniauth-rails_csrf_protection` - required security gem that protects against CSRF attacks
+
+Run:
+
+```
+bundle install
+```
