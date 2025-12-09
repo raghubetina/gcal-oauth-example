@@ -1,0 +1,23 @@
+<h1>Your Upcoming Events</h1>
+
+<p>Signed in as <%= current_user.email %></p>
+
+<p><%= link_to "Sign out", destroy_user_session_path, data: { turbo_method: :delete } %></p>
+
+<% if @events.any? %>
+  <ul>
+    <% @events.each do |event| %>
+      <li>
+        <strong><%= event.summary %></strong>
+        <br>
+        <% if event.start.date_time %>
+          <%= event.start.date_time.strftime("%B %d, %Y at %l:%M %p") %>
+        <% else %>
+          <%= event.start.date %> (all day)
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+<% else %>
+  <p>No upcoming events found.</p>
+<% end %>

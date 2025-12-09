@@ -326,3 +326,50 @@ end
 This does two things:
 1. Tells Devise to use our custom `OmniauthCallbacksController` for OAuth callbacks
 2. Sets the root route to `pages#home`
+
+## Step 12: Create the home view
+
+Create `app/views/pages/home.html.erb`:
+
+```erb
+<%# app/views/pages/home.html.erb %>
+
+<h1>Your Upcoming Events</h1>
+
+<p>Signed in as <%= current_user.email %></p>
+
+<p><%= link_to "Sign out", destroy_user_session_path, data: { turbo_method: :delete } %></p>
+
+<% if @events.any? %>
+  <ul>
+    <% @events.each do |event| %>
+      <li>
+        <strong><%= event.summary %></strong>
+        <br>
+        <% if event.start.date_time %>
+          <%= event.start.date_time.strftime("%B %d, %Y at %l:%M %p") %>
+        <% else %>
+          <%= event.start.date %> (all day)
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+<% else %>
+  <p>No upcoming events found.</p>
+<% end %>
+```
+
+This view:
+- Shows the user's email
+- Provides a sign out link
+- Loops through `@events` and displays each event's title and start time
+- Handles both timed events and all-day events
+
+## Try it out!
+
+1. Make sure your `.env` file has your Google credentials
+2. Start the server: `bin/dev`
+3. Visit `http://localhost:3000`
+4. You'll be redirected to sign in - click "Sign in with Google"
+5. Authorize the app to access your calendar
+6. You should see your upcoming events!
