@@ -131,9 +131,12 @@ Before creating credentials, you need to configure what users see when they auth
 2. Click "Create Credentials" > "OAuth client ID"
 3. Select "Web application" as the application type
 4. Give it a name (e.g., "Rails App")
-5. Under "Authorized redirect URIs", add:
+5. Under "Authorized redirect URIs", add your callback URL:
+   - For GitHub Codespaces: `https://YOUR_CODESPACE_NAME-3000.app.github.dev/users/auth/google_oauth2/callback`
    - For local development: `http://localhost:3000/users/auth/google_oauth2/callback`
-   - For production: `https://your-domain.com/users/auth/google_oauth2/callback`
+
+   **Finding your Codespace URL**: Start your Rails server with `bin/server`, then visit your live app preview. Notice the URL in the browser - it will be something like `https://curly-space-zebra-abc123-3000.app.github.dev`. Add `/users/auth/google_oauth2/callback` to the end of that base URL.
+
 6. Click "Create"
 
 You'll see a popup with your **Client ID** and **Client Secret**. Save these! You'll need them in the next step.
@@ -433,8 +436,8 @@ This creates view templates in `app/views/devise/`. Open `app/views/devise/sessi
 ## Try it out!
 
 1. Make sure your `.env` file has your Google credentials
-2. Start the server: `bin/dev` (or `bin/rails server` if you don't have the dev script)
-3. Visit `http://localhost:3000`
+2. Start the server: `bin/server`
+3. Visit your live app preview
 4. You'll be redirected to sign in - click "Sign in with Google"
 5. Authorize the app to access your calendar
 6. You should see your upcoming events!
@@ -444,8 +447,8 @@ This creates view templates in `app/views/devise/`. Open `app/views/devise/sessi
 ### "Redirect URI mismatch"
 
 This is the most common error. It means the URL configured in Google Cloud Console doesn't *exactly* match where your app is sending the user.
-- Check that you are using `http` vs `https` correctly.
-- Ensure the port is correct (usually `3000`).
+- In Codespaces, your URL changes each time you create a new Codespace. Make sure you've added the current Codespace URL to Google Cloud Console.
+- Check that you are using `http` vs `https` correctly (Codespaces uses `https`).
 - Ensure the path is exactly `/users/auth/google_oauth2/callback`.
 - Trailing slashes matter!
 
