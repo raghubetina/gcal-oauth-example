@@ -173,3 +173,22 @@ The `scope` parameter tells Google what permissions we're requesting:
 - `email` - access to the user's email address
 - `profile` - access to basic profile info (name, profile picture)
 - `https://www.googleapis.com/auth/calendar.readonly` - read-only access to calendar events
+
+## Step 6: Add OAuth columns to the users table
+
+We need to store some additional information for users who sign in with Google:
+
+```
+bin/rails generate migration AddOmniAuthColumnsToUsers provider:string uid:string google_access_token:string
+```
+
+This creates a migration that adds three columns:
+- `provider` - stores "google_oauth2" to identify how the user signed up
+- `uid` - stores the user's unique Google ID
+- `google_access_token` - stores the token we'll use to access their calendar
+
+Run the migration:
+
+```
+bin/rails db:migrate
+```
