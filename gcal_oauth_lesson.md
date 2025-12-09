@@ -254,3 +254,21 @@ Key changes:
   - If not found, creates a new user with the Google email
   - Generates a random password (they'll never use it since they sign in with Google)
   - Saves the `google_access_token` so we can access their calendar
+
+## Step 9: Add the Google Calendar API gem
+
+To fetch calendar events, we need Google's official API client:
+
+```ruby
+# Gemfile
+
+gem "google-apis-calendar_v3"
+```
+
+Then:
+
+```
+bundle install
+```
+
+This gem provides a Ruby interface to the Google Calendar API.
