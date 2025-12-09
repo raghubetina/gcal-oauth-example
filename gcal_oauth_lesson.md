@@ -99,6 +99,8 @@ Before we can configure our app, we need to get credentials from Google. This in
 2. Search for "Google Calendar API"
 3. Click on it and then click "Enable"
 
+**Important**: If you skip this step, you'll get a "Google Calendar API has not been used in project... or it is disabled" error when trying to fetch events. You can also enable it directly at: `https://console.developers.google.com/apis/api/calendar-json.googleapis.com/overview`
+
 ### Configure the OAuth consent screen
 
 Before creating credentials, you need to configure what users see when they authorize your app:
@@ -169,13 +171,18 @@ Replace the commented-out `config.omniauth` line with:
   config.omniauth :google_oauth2,
     ENV.fetch("GOOGLE_CLIENT_ID"),
     ENV.fetch("GOOGLE_CLIENT_SECRET"),
-    scope: "email,profile,https://www.googleapis.com/auth/calendar.readonly"
+    scope: "email,profile,https://www.googleapis.com/auth/calendar.readonly",
+    prompt: "consent",
+    access_type: "offline"
 ```
 
-The `scope` parameter tells Google what permissions we're requesting:
-- `email` - access to the user's email address
-- `profile` - access to basic profile info (name, profile picture)
-- `https://www.googleapis.com/auth/calendar.readonly` - read-only access to calendar events
+The options:
+- `scope` tells Google what permissions we're requesting:
+  - `email` - access to the user's email address
+  - `profile` - access to basic profile info (name, profile picture)
+  - `https://www.googleapis.com/auth/calendar.readonly` - read-only access to calendar events
+- `prompt: "consent"` forces Google to show the consent screen every time, ensuring all scopes are requested (helpful if you change scopes later)
+- `access_type: "offline"` tells Google we want a refresh token (for future use)
 
 ## Step 6: Add OAuth columns to the users table
 
@@ -240,11 +247,18 @@ class User < ApplicationRecord
          :omniauthable, omniauth_providers: [:google_oauth2]
 
   def self.from_omniauth(auth)
-    find_or_create_by(provider: auth.provider, uid: auth.uid) do |user|
-      user.email = auth.info.email
-      user.password = Devise.friendly_token[0, 20]
-      user.google_access_token = auth.credentials.token
-    end
+    user = find_by(provider: auth.provider, uid: auth.uid)
+    user ||= find_by(email: auth.info.email)
+    user ||= new(
+      email: auth.info.email,
+      password: Devise.friendly_token[0, 20]
+    )
+
+    user.provider = auth.provider
+    user.uid = auth.uid
+    user.google_access_token = auth.credentials.token
+    user.save
+    user
   end
 end
 ```
@@ -253,10 +267,10 @@ Key changes:
 - Added `:omniauthable` to the Devise modules
 - Added `omniauth_providers: [:google_oauth2]` to specify which providers we support
 - The `from_omniauth` class method:
-  - Looks for an existing user with matching `provider` and `uid`
-  - If not found, creates a new user with the Google email
-  - Generates a random password (they'll never use it since they sign in with Google)
-  - Saves the `google_access_token` so we can access their calendar
+  - First tries to find an existing user by `provider` and `uid` (returning Google user)
+  - Falls back to finding by email (in case they signed up with email first)
+  - Creates a new user only if neither exists
+  - **Always updates** the `google_access_token` on every sign-in (this is important - tokens can change or expire)
 
 ## Step 9: Add the Google Calendar API gem
 
@@ -299,6 +313,10 @@ class PagesController < ApplicationController
     )
 
     @events = response.items || []
+  rescue Google::Apis::ClientError
+    sign_out current_user
+    redirect_to new_user_session_path,
+      alert: "We need permission to access your calendar. Please sign in again."
   end
 end
 ```
@@ -309,6 +327,7 @@ This controller:
 - Uses the user's stored access token for authorization
 - Fetches up to 10 upcoming events from their primary calendar
 - `"primary"` refers to the user's main calendar
+- If the API call fails (expired token, wrong scopes, etc.), it signs the user out and asks them to re-authenticate
 
 ## Step 11: Set up routes
 
@@ -376,3 +395,30 @@ This view:
 4. You'll be redirected to sign in - click "Sign in with Google"
 5. Authorize the app to access your calendar
 6. You should see your upcoming events!
+
+## Troubleshooting
+
+### "Access blocked: [App name] has not completed the Google verification process"
+
+Your app is in "Testing" mode and you haven't added yourself as a test user. Go to the OAuth consent screen in Google Cloud Console and add your email under "Test users".
+
+### "Google Calendar API has not been used in project... or it is disabled"
+
+You need to enable the Google Calendar API in your Google Cloud project. Go to APIs & Services > Library, search for "Google Calendar API", and click Enable.
+
+### "Request had insufficient authentication scopes"
+
+The access token doesn't have calendar permissions. This can happen if:
+1. You didn't add the calendar scope to your OAuth consent screen
+2. You signed in before adding the scope, and Google remembered the old permissions
+
+The app handles this automatically by signing you out and asking you to re-authenticate. Make sure the calendar scope is configured in your OAuth consent screen.
+
+### Redirect loop (keeps asking you to sign in)
+
+Check the server logs for the specific error. Common causes:
+- Google Calendar API not enabled
+- Missing or incorrect scopes
+- Token issues
+
+The `rescue Google::Apis::ClientError` in the controller catches these and redirects to sign-in, which can create a loop if the underlying issue isn't fixed.

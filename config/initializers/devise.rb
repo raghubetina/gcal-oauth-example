@@ -274,7 +274,9 @@ Devise.setup do |config|
   config.omniauth :google_oauth2,
     ENV.fetch("GOOGLE_CLIENT_ID"),
     ENV.fetch("GOOGLE_CLIENT_SECRET"),
-    scope: "email,profile,https://www.googleapis.com/auth/calendar.readonly"
+    scope: "email,profile,https://www.googleapis.com/auth/calendar.readonly",
+    prompt: "consent",
+    access_type: "offline"
 
   # ==> Warden configuration
   # If you want to use other strategies, that are not supported by Devise, or

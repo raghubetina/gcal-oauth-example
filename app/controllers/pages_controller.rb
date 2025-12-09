@@ -14,5 +14,9 @@ class PagesController < ApplicationController
     )
 
     @events = response.items || []
+  rescue Google::Apis::ClientError
+    sign_out current_user
+    redirect_to new_user_session_path,
+      alert: "We need permission to access your calendar. Please sign in again."
   end
 end

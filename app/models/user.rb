@@ -27,10 +27,17 @@ class User < ApplicationRecord
          :omniauthable, omniauth_providers: [:google_oauth2]
 
   def self.from_omniauth(auth)
-    find_or_create_by(provider: auth.provider, uid: auth.uid) do |user|
-      user.email = auth.info.email
-      user.password = Devise.friendly_token[0, 20]
-      user.google_access_token = auth.credentials.token
-    end
+    user = find_by(provider: auth.provider, uid: auth.uid)
+    user ||= find_by(email: auth.info.email)
+    user ||= new(
+      email: auth.info.email,
+      password: Devise.friendly_token[0, 20]
+    )
+
+    user.provider = auth.provider
+    user.uid = auth.uid
+    user.google_access_token = auth.credentials.token
+    user.save
+    user
   end
 end
