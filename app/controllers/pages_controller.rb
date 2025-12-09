@@ -10,11 +10,11 @@ class PagesController < ApplicationController
       max_results: 10,
       single_events: true,
       order_by: "startTime",
-      time_min: Time.now.iso8601
+      time_min: Time.current.iso8601
     )
 
     @events = response.items || []
-  rescue Google::Apis::ClientError
+  rescue Google::Apis::ClientError, Google::Apis::AuthorizationError
     sign_out current_user
     redirect_to new_user_session_path,
       alert: "We need permission to access your calendar. Please sign in again."
