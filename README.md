@@ -485,3 +485,109 @@ Check the server logs for the specific error. Common causes:
 - Token issues
 
 The `rescue Google::Apis::ClientError` in the controller catches these and redirects to sign-in, which can create a loop if the underlying issue isn't fixed.
+
+## Going Further: Automatic Token Refresh
+
+In this tutorial, when a user's access token expires (after ~1 hour), we sign them out and ask them to re-authenticate. This is fine for learning, but in a production app you'd want to automatically refresh the token using the stored refresh token.
+
+Here's how you could implement automatic token refresh:
+
+### 1. Add a method to refresh the token
+
+Add this to your `User` model:
+
+```ruby
+# app/models/user.rb
+
+def refresh_google_token!
+  return unless google_refresh_token.present?
+
+  response = HTTP.post("https://oauth2.googleapis.com/token", form: {
+    client_id: ENV.fetch("GOOGLE_CLIENT_ID"),
+    client_secret: ENV.fetch("GOOGLE_CLIENT_SECRET"),
+    refresh_token: google_refresh_token,
+    grant_type: "refresh_token"
+  })
+
+  if response.status.success?
+    data = JSON.parse(response.body)
+    update!(google_access_token: data["access_token"])
+    true
+  else
+    false
+  end
+end
+```
+
+This method uses the `http` gem (already in the Gemfile) to request a new access token from Google using the refresh token.
+
+### 2. Update the controller to refresh on failure
+
+Modify the `PagesController` to attempt a token refresh before giving up:
+
+```ruby
+# app/controllers/pages_controller.rb
+
+class PagesController < ApplicationController
+  before_action :authenticate_user!
+
+  def home
+    @events = fetch_calendar_events
+  rescue Google::Apis::AuthorizationError
+    if current_user.refresh_google_token!
+      retry
+    else
+      sign_out current_user
+      redirect_to new_user_session_path,
+        alert: "Your session has expired. Please sign in again."
+    end
+  end
+
+  private
+
+  def fetch_calendar_events
+    service = Google::Apis::CalendarV3::CalendarService.new
+    service.authorization = current_user.google_access_token
+
+    response = service.list_events(
+      "primary",
+      max_results: 10,
+      single_events: true,
+      order_by: "startTime",
+      time_min: Time.current.iso8601
+    )
+
+    response.items || []
+  end
+end
+```
+
+Now when an API call fails due to an expired token, the app will:
+1. Attempt to refresh the token
+2. Retry the API call if refresh succeeds
+3. Only sign the user out if refresh fails (e.g., user revoked access)
+
+### 3. Handle missing refresh tokens
+
+Remember that Google only sends the refresh token on the first authorization. If a user signed in before you added `access_type: "offline"` to your config, they won't have a refresh token stored.
+
+To fix this, you can force re-consent for users without a refresh token:
+
+```ruby
+# app/controllers/application_controller.rb
+
+before_action :ensure_refresh_token
+
+private
+
+def ensure_refresh_token
+  return unless user_signed_in?
+  return if current_user.google_refresh_token.present?
+
+  sign_out current_user
+  redirect_to new_user_session_path,
+    alert: "Please sign in again to enable automatic session refresh."
+end
+```
+
+This ensures all users have a refresh token, improving the user experience by eliminating unexpected sign-outs.
