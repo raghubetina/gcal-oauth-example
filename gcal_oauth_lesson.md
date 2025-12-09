@@ -306,3 +306,23 @@ This controller:
 - Uses the user's stored access token for authorization
 - Fetches up to 10 upcoming events from their primary calendar
 - `"primary"` refers to the user's main calendar
+
+## Step 11: Set up routes
+
+Update `config/routes.rb` to wire everything together:
+
+```ruby
+# config/routes.rb
+
+Rails.application.routes.draw do
+  devise_for :users, controllers: {
+    omniauth_callbacks: "omniauth_callbacks"
+  }
+
+  root "pages#home"
+end
+```
+
+This does two things:
+1. Tells Devise to use our custom `OmniauthCallbacksController` for OAuth callbacks
+2. Sets the root route to `pages#home`
