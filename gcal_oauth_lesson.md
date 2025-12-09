@@ -78,3 +78,66 @@ Run:
 ```
 bundle install
 ```
+
+## Step 4: Register your app with Google
+
+Before we can configure our app, we need to get credentials from Google. This involves:
+1. Creating a project in Google Cloud Console
+2. Enabling the Google Calendar API
+3. Creating OAuth credentials
+
+### Create a Google Cloud project
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+2. Click the project dropdown at the top of the page and click "New Project"
+3. Give your project a name (e.g., "My Calendar App") and click "Create"
+4. Wait for the project to be created, then make sure it's selected in the dropdown
+
+### Enable the Google Calendar API
+
+1. In the left sidebar, go to "APIs & Services" > "Library"
+2. Search for "Google Calendar API"
+3. Click on it and then click "Enable"
+
+### Configure the OAuth consent screen
+
+Before creating credentials, you need to configure what users see when they authorize your app:
+
+1. Go to "APIs & Services" > "OAuth consent screen"
+2. Select "External" (unless you have a Google Workspace organization) and click "Create"
+3. Fill in the required fields:
+   - **App name**: Your app's name (e.g., "My Calendar App")
+   - **User support email**: Your email address
+   - **Developer contact information**: Your email address
+4. Click "Save and Continue"
+5. On the "Scopes" page, click "Add or Remove Scopes" and add:
+   - `.../auth/userinfo.email`
+   - `.../auth/userinfo.profile`
+   - `.../auth/calendar.readonly`
+6. Click "Save and Continue"
+7. On the "Test users" page, add your own Google email address (required while the app is in testing mode)
+8. Click "Save and Continue", then "Back to Dashboard"
+
+### Create OAuth credentials
+
+1. Go to "APIs & Services" > "Credentials"
+2. Click "Create Credentials" > "OAuth client ID"
+3. Select "Web application" as the application type
+4. Give it a name (e.g., "Rails App")
+5. Under "Authorized redirect URIs", add:
+   - For local development: `http://localhost:3000/users/auth/google_oauth2/callback`
+   - For production: `https://your-domain.com/users/auth/google_oauth2/callback`
+6. Click "Create"
+
+You'll see a popup with your **Client ID** and **Client Secret**. Save these! You'll need them in the next step.
+
+### Store your credentials
+
+Create a `.env` file in your Rails app root (if you don't have one already) and add:
+
+```
+GOOGLE_CLIENT_ID=your_client_id_here
+GOOGLE_CLIENT_SECRET=your_client_secret_here
+```
+
+**Important**: Make sure `.env` is in your `.gitignore` file so you don't accidentally commit your secrets!
