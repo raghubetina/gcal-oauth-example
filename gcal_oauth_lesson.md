@@ -141,3 +141,35 @@ GOOGLE_CLIENT_SECRET=your_client_secret_here
 ```
 
 **Important**: Make sure `.env` is in your `.gitignore` file so you don't accidentally commit your secrets!
+
+## Step 5: Configure OmniAuth in Devise
+
+Now we need to tell Devise to use Google for authentication. Open `config/initializers/devise.rb` and find the OmniAuth section (around line 271):
+
+```ruby
+# config/initializers/devise.rb
+
+  # ==> OmniAuth
+  # Add a new OmniAuth provider. Check the wiki for more information on setting
+  # up on your models and hooks.
+  # config.omniauth :github, 'APP_ID', 'APP_SECRET', scope: 'user,public_repo'
+```
+
+Replace the commented-out `config.omniauth` line with:
+
+```ruby
+# config/initializers/devise.rb
+
+  # ==> OmniAuth
+  # Add a new OmniAuth provider. Check the wiki for more information on setting
+  # up on your models and hooks.
+  config.omniauth :google_oauth2,
+    ENV.fetch("GOOGLE_CLIENT_ID"),
+    ENV.fetch("GOOGLE_CLIENT_SECRET"),
+    scope: "email,profile,https://www.googleapis.com/auth/calendar.readonly"
+```
+
+The `scope` parameter tells Google what permissions we're requesting:
+- `email` - access to the user's email address
+- `profile` - access to basic profile info (name, profile picture)
+- `https://www.googleapis.com/auth/calendar.readonly` - read-only access to calendar events
